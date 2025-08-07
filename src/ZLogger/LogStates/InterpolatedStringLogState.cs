@@ -102,7 +102,35 @@ public sealed class InterpolatedStringLogState :
 
     public void ToString(IBufferWriter<byte> writer)
     {
-        messageSequence.ToString(writer, magicalBox, parameters);
+        // KEEPSAKE FIX - try/catch to get more info on weird MagicBox exception?
+        try
+        {
+            messageSequence.ToString(writer, magicalBox, parameters);
+        }
+        catch (Exception ex)
+        {
+            {
+                var errorMessage = $"[INTERNAL LOGGING ERROR: {ex.Message}]";
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorMessage);
+                var span = writer.GetSpan(errorBytes.Length);
+                errorBytes.CopyTo(span);
+                writer.Advance(errorBytes.Length);
+            }
+            {
+                var errorMessage = $"[... parameter count: {ParameterCount}]";
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorMessage);
+                var span = writer.GetSpan(errorBytes.Length);
+                errorBytes.CopyTo(span);
+                writer.Advance(errorBytes.Length);
+            }
+            {
+                var errorMessage = $"[... original format: {GetOriginalFormat()}]";
+                var errorBytes = System.Text.Encoding.UTF8.GetBytes(errorMessage);
+                var span = writer.GetSpan(errorBytes.Length);
+                errorBytes.CopyTo(span);
+                writer.Advance(errorBytes.Length);
+            }
+        }
     }
 
     public string GetOriginalFormat()
